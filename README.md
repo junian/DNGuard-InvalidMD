@@ -13,3 +13,7 @@ Detected InvalidMD @ RunHVM (1)
 Detected InvalidMD @ RunHVM (1)
 Output: /Users/dotnet/App_Decoded.dll
 ```
+
+## Credits
+
+- [nelpats/DNGuard-InvalidMD: The easiest way to remove DNGuard Invalid-MD](https://github.com/nelpats/DNGuard-InvalidMD)

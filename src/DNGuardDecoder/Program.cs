@@ -1,46 +1,54 @@
 ﻿using dnlib.DotNet;
 using dnlib.DotNet.Emit;
 using dnlib.DotNet.Writer;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace DNGuard
+if (args.Length <= 0)
 {
-    class Program
+    Console.WriteLine("Usage: DNGuardDecoder.exe /path/to/assembly.dll");
+    return;
+}
+
+var selectedFile = args[0];
+
+if(!File.Exists(selectedFile))
+{
+    Console.WriteLine($"File '${selectedFile}' doesn't exist.");
+    return;
+}
+
+var module = ModuleDefMD.Load(selectedFile);
+
+foreach (var type in module.Types)
+{
+    if (!type.HasMethods)
+        continue;
+    
+    foreach (var method in type.Methods)
     {
-        static void Main(string[] args)
+        if (method.HasBody && method.Body.HasInstructions)
         {
-            ModuleDefMD module = ModuleDefMD.Load(args[0]);
-            foreach (TypeDef type in module.Types)
+            var IL = method.Body.Instructions;
+            for (int i = 0; i < IL.Count; i++)
             {
-                if (!type.HasMethods)
-                    continue;
-                foreach (MethodDef method in type.Methods)
+                if (IL[i].OpCode == OpCodes.Call && IL[i].Operand == null && IL[i + 3].OpCode == OpCodes.Br_S)
                 {
-                    if (method.HasBody && method.Body.HasInstructions)
-                    {
-                        IList<Instruction> IL = method.Body.Instructions;
-                        for (int i = 0; i < IL.Count; i++)
-                        {
-                           if (IL[i].OpCode == OpCodes.Call && IL[i].Operand == null && IL[i + 3].OpCode == OpCodes.Br_S)
-                            {
-                                Console.WriteLine($"Detected InvalidMD @ {method.Name} ({i})");
-                                IL[i].OpCode = OpCodes.Nop;
-                                IL[i + 3].OpCode = OpCodes.Nop;
-                            }
-                        }
-                    }
+                    Console.WriteLine($"Detected InvalidMD @ {method.Name} ({i})");
+                    IL[i].OpCode = OpCodes.Nop;
+                    IL[i + 3].OpCode = OpCodes.Nop;
                 }
-
-
-
             }
-            ModuleWriterOptions ee = new ModuleWriterOptions(module);
-            ee.MetadataLogger = DummyLogger.NoThrowInstance;
-            module.Write($@"{Environment.CurrentDirectory}\Decoded.exe", ee);
         }
     }
 }
+
+var ee = new ModuleWriterOptions(module)
+{
+    MetadataLogger = DummyLogger.NoThrowInstance
+};
+
+var directory = Path.GetDirectoryName(selectedFile) ?? Environment.CurrentDirectory;
+var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(selectedFile);
+var extension = Path.GetExtension(selectedFile);
+var outputPath = Path.Combine(directory, $"{fileNameWithoutExtension}_Decoded{extension}");
+
+module.Write(outputPath, ee);

@@ -51,4 +51,5 @@ var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(selectedFile);
 var extension = Path.GetExtension(selectedFile);
 var outputPath = Path.Combine(directory, $"{fileNameWithoutExtension}_Decoded{extension}");
 
+Console.WriteLine($"Output: {outputPath}");
 module.Write(outputPath, ee);
